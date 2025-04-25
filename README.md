@@ -13,7 +13,11 @@ import tomlJSONPathReplacer from 'toml-json-path-replacer'
 const toml = `
 name = "my-worker" # worker name
 `
-const updatedTOML = tomlJSONPathReplacer(toml, ['name'], 'my-new-worker');
+const updatedTOML = tomlJSONPathReplacer(
+    toml, // the toml string
+    ['name'], // the JSON path to insert the new value
+    'my-new-worker' // the new value
+);
 // name = "my-updated-worker" # worker name
 ```
 
