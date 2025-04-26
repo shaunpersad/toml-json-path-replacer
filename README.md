@@ -8,7 +8,7 @@ npm i toml-json-path-replacer
 
 ## Usage
 ```javascript
-import tomlJSONPathReplacer from 'toml-json-path-replacer'
+import { tomlJSONPathReplacer } from 'toml-json-path-replacer'
 
 const toml = `
 name = "my-worker" # worker name

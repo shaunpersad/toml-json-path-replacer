@@ -33,7 +33,7 @@ function getPath(node: TOMLNode, parent: TOMLNode | null, keys: JSONPath = []): 
 /**
  * Replaces the value in the TOML found at the given path.
  */
-export default function tomlJSONPathReplacer(
+function tomlJSONPathReplacer(
   toml: string,
   jsonPath: JSONPath,
   value: unknown,
@@ -63,3 +63,6 @@ export default function tomlJSONPathReplacer(
   });
   return replaced;
 }
+
+export { tomlJSONPathReplacer };
+

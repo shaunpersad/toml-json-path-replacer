@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import tomlJSONPathReplacer, { JSONPath } from './index';
+import { tomlJSONPathReplacer, JSONPath } from './index';
 
 const toml = `
 # Top-level configuration

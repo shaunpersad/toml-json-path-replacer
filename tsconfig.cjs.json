@@ -7,5 +7,5 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true
   },
-  "exclude": ["node_modules", "src/throttledQueue.test.ts"]
+  "exclude": ["node_modules", "src/index.test.ts"]
 }
