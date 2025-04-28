@@ -5,7 +5,8 @@
     "module": "commonjs",
     "outDir": "dist/cjs",
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true
   },
   "exclude": ["node_modules", "src/index.test.ts"]
 }
