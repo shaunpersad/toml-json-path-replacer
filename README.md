@@ -16,7 +16,7 @@ name = "my-worker" # worker name
 const updatedTOML = tomlJSONPathReplacer(
     toml, // the toml string
     ['name'], // the JSON path to insert the new value
-    'my-new-worker' // the new value
+    'my-updated-worker' // the new value
 );
 // name = "my-updated-worker" # worker name
 ```

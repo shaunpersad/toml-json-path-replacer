@@ -1,18 +1,18 @@
 {
   "name": "toml-json-path-replacer",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "description": "Use JSON paths to replace values in TOML.",
   "main": "dist/cjs/index.cjs",
   "types": "dist/cjs/index.d.cts",
   "type": "module",
   "exports": {
     "import": {
-      "default": "./dist/esm/index.mjs",
-      "types": "./dist/esm/index.d.mts"
+      "types": "./dist/esm/index.d.mts",
+      "default": "./dist/esm/index.mjs"
     },
     "require": {
-      "default": "./dist/cjs/index.cjs",
-      "types": "./dist/cjs/index.d.cts"
+      "types": "./dist/cjs/index.d.cts",
+      "default": "./dist/cjs/index.cjs"
     }
   },
   "files": [
