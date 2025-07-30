@@ -9,7 +9,8 @@
     "declaration": true,
     "rootDir": "src",
     "outDir": "dist",
-    "lib": ["es2018", "dom"]
+    "lib": ["es2018", "dom"],
+    "allowSyntheticDefaultImports": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]

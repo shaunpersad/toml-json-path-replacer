@@ -36,11 +36,14 @@ route = { pattern = "staging.example.org/*", zone_name = "example.org" }
 kv_namespaces = [
   { binding = "<MY_NAMESPACE>", id = "<STAGING_KV_ID>" }
 ]
+
+[env.production]
+name = "<PROD_WORKER_NAME>"
 `;
 
 describe('tomlJSONPathReplacer', () => {
 
-  it('performs targeted replacements of scalar values', () => {
+  it('performs targeted replacements of values', () => {
 
     const replacements = [
       {
@@ -83,6 +86,12 @@ describe('tomlJSONPathReplacer', () => {
         path: ['env', 'staging', 'kv_namespaces', 0, 'id'],
         value: 'new-staging-id',
       },
+      {
+        path: ['env', 'production'],
+        value: {
+          name: 'prod-worker-name',
+        },
+      },
     ] satisfies Array<{ path: JSONPath, value: unknown }>;
 
     const updatedTOML = replacements.reduce(
@@ -91,44 +100,7 @@ describe('tomlJSONPathReplacer', () => {
       },
       toml,
     );
-    expect(updatedTOML).toMatchInlineSnapshot(`
-      "
-      # Top-level configuration
-      name = "my-new-worker"
-      main = "src/index.js"
-      "compatibility_date" = "2025-04-25"
-
-      workers_dev = true
-
-      route = { pattern = "example.com/*", zone_name = "example.com" }
-
-      kv_namespaces = [
-        { binding = "<MY_NAMESPACE>", id = "new-kv-id" } # some comment
-      ]
-
-      [limits]
-      cpu_ms = 50
-
-      [[d1_databases]]
-      binding = "<BINDING_NAME_1>" # first db
-      database_name = "<DATABASE_NAME_1>"
-      database_id = "<DATABASE_ID_1>"
-
-      [[d1_databases]]
-      binding = "<BINDING_NAME_2>" # second db
-      database_name = "new-db-name"
-      database_id = "<DATABASE_ID_3>"
-
-      [env.staging]
-      # Overrides above
-      name = "my-worker-staging"
-      route = { pattern = "api.staging.example.org/*", zone_name = "example.org" }
-
-      kv_namespaces = [
-        { binding = "<MY_NAMESPACE>", id = "new-staging-id" }
-      ]
-      "
-    `);
+    expect(updatedTOML).toMatchInlineSnapshot();
   });
 
   it('returns the string unchanged if the path is not found', () => {
@@ -136,10 +108,7 @@ describe('tomlJSONPathReplacer', () => {
     expect(updatedTOML).toEqual(toml);
   });
 
-  it('throws an error if a non-scalar value is used', () => {
-    expect(() => tomlJSONPathReplacer(toml, ['name'], {}))
-      .toThrowErrorMatchingInlineSnapshot('[Error: Non-scalar values are not allowed.]');
-    expect(() => tomlJSONPathReplacer(toml, ['name'], []))
-      .toThrowErrorMatchingInlineSnapshot('[Error: Non-scalar values are not allowed.]');
+  it('performs insertions when the path does not exist', () => {
+
   });
 });

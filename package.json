@@ -43,6 +43,7 @@
     "json path"
   ],
   "devDependencies": {
+    "@types/lodash.set": "^4.3.9",
     "@typescript-eslint/eslint-plugin": "^5.9.0",
     "@typescript-eslint/parser": "^5.9.0",
     "eslint": "^8.6.0",
@@ -53,6 +54,8 @@
     "vitest": "^3.0.9"
   },
   "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "lodash.set": "^4.3.2",
     "toml-eslint-parser": "^0.10.0"
   }
 }
