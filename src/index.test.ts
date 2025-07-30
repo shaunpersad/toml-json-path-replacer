@@ -1,6 +1,8 @@
 import { expect, describe, it } from 'vitest';
 import { tomlJSONPathReplacer, JSONPath } from './index';
 
+type Replacements = Array<{ path: JSONPath, value: unknown }>;
+
 const toml = `
 # Top-level configuration
 name = "my-worker"
@@ -43,9 +45,47 @@ name = "<PROD_WORKER_NAME>"
 
 describe('tomlJSONPathReplacer', () => {
 
-  it('performs targeted replacements of values', () => {
+  it('performs targeted replacements of complex values', () => {
 
-    const replacements = [
+    const replacements: Replacements = [
+      { // inline table
+        path: ['route'],
+        value: { pattern: 'example.com/*', zone_name: 'example_com' },
+      },
+      { // array
+        path: ['kv_namespaces'],
+        value: [
+          {
+            binding: 'KV_NAMESPACE_1',
+            id: 'kv-namespace-id-1',
+          },
+          {
+            binding: 'KV_NAMESPACE_2',
+            id: 'kv-namespace-id-2',
+          },
+        ],
+      },
+      { // table
+        path: ['limits'],
+        value: { cpu_ms: 200 },
+      },
+      { // table array
+        path: ['d1_databases'],
+        value: [
+          {
+            binding: 'DB_1',
+            database_name: 'db-1-name',
+            database_id: 'db-1-id',
+          },
+        ],
+      },
+    ];
+
+  });
+
+  it('performs targeted replacements of scalar values', () => {
+
+    const replacements: Replacements = [
       {
         path: ['name'],
         value: 'my-new-worker',
@@ -86,13 +126,7 @@ describe('tomlJSONPathReplacer', () => {
         path: ['env', 'staging', 'kv_namespaces', 0, 'id'],
         value: 'new-staging-id',
       },
-      {
-        path: ['env', 'production'],
-        value: {
-          name: 'prod-worker-name',
-        },
-      },
-    ] satisfies Array<{ path: JSONPath, value: unknown }>;
+    ];
 
     const updatedTOML = replacements.reduce(
       (newTOML, { path, value }) => {

@@ -2,30 +2,31 @@ import { TOMLNode } from 'toml-eslint-parser/lib/ast';
 
 export type JSONPath = Array<string | number>;
 
-export function getPath(node: TOMLNode, parent: TOMLNode | null, keys: JSONPath = []): JSONPath {
+export function getPath(node: TOMLNode, keys: JSONPath = []): JSONPath {
+  const { parent } = node;
   if (!parent) {
     return keys;
   }
   switch (parent.type) {
     case 'TOMLTable':
-      return getPath(parent, parent.parent, [
+      return getPath(parent, [
         ...parent.resolvedKey,
         ...keys,
       ]);
     case 'TOMLArray':
-      return getPath(parent, parent.parent, [
+      return getPath(parent, [
         parent.elements.findIndex((item) => item === node),
         ...keys,
       ]);
     case 'TOMLKeyValue':
-      return getPath(parent, parent.parent, [
+      return getPath(parent, [
         ...parent.key.keys.map((key) => {
           return key.type === 'TOMLBare' ? key.name : key.value;
         }),
         ...keys,
       ]);
     default:
-      return getPath(parent, parent.parent, keys);
+      return getPath(parent, keys);
   }
 }
 
