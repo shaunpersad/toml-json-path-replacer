@@ -11,12 +11,12 @@ workers_dev = false
 
 route = { pattern = "example.org/*", zone_name = "example.org" }
 
-[limits]
-cpu_ms = 100
-
 kv_namespaces = [
   { binding = "<MY_NAMESPACE>", id = "<KV_ID>" } # some comment
 ]
+
+[limits]
+cpu_ms = 100
 
 [[d1_databases]]
 binding = "<BINDING_NAME_1>" # first db
@@ -102,12 +102,12 @@ describe('tomlJSONPathReplacer', () => {
 
       route = { pattern = "example.com/*", zone_name = "example.com" }
 
+      kv_namespaces = [
+        { binding = "<MY_NAMESPACE>", id = "new-kv-id" } # some comment
+      ]
+
       [limits]
       cpu_ms = 50
-
-      kv_namespaces = [
-        { binding = "<MY_NAMESPACE>", id = "<KV_ID>" } # some comment
-      ]
 
       [[d1_databases]]
       binding = "<BINDING_NAME_1>" # first db
