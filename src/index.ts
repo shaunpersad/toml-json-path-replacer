@@ -42,14 +42,14 @@ function insert(
         toml.trimEnd(),
         '\n\n',
         serializeTable(jsonPath, value),
-      ].join('');
+      ].join('').trim();
     }
     if (isArrayOfObjects(value)) { // we can create table arrays
       return [
         toml.trimEnd(),
         '\n\n',
         value.map((item) => serializeTable(jsonPath, item, 'array')).join('\n\n'),
-      ].join('');
+      ].join('').trim();
     }
     if (jsonPath.length >= 2) { // we have enough keys in the path to create a table name and a table body
       const objectKey = jsonPath.pop()!;
@@ -57,14 +57,14 @@ function insert(
         toml.trimEnd(),
         '\n\n',
         serializeTable(jsonPath, { [objectKey]: value }),
-      ].join('');
+      ].join('').trim();
     }
     // we couldn't meet the criteria for a table so we have to use a kv pair, which will go at the top of the file
     return [
       serializeKeyValue(jsonPath, value),
       '\n\n',
       toml.trimStart(),
-    ].join('');
+    ].join('').trim();
   }
 
   switch (node.type) {
