@@ -70,4 +70,14 @@ export class PathTracker {
   toJSON() {
     return this.paths;
   }
+
+  toString() {
+    return JSON.stringify(
+      this.paths.map(
+        ([path, node]) => [path, node.type],
+      ),
+      null,
+      2,
+    );
+  }
 }

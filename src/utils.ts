@@ -1,4 +1,4 @@
-export function isPlainObject(value: unknown): boolean {
+export function isPlainObject(value: unknown): value is object {
   if (typeof value !== 'object' || value === null) {
     return false;
   }
