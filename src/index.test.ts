@@ -153,10 +153,7 @@ describe('tomlJSONPathReplacer', () => {
       toml,
     );
     expect(updatedTOML).toMatchInlineSnapshot(`
-      "d1_databases = [
-        { binding = "DB_1", database_name = "db-1-name", database_id = "db-1-id" }
-      ]
-
+      "
       # Top-level configuration
       name = "my-worker"
       main = "src/index.js"
@@ -182,6 +179,11 @@ describe('tomlJSONPathReplacer', () => {
       cpu_ms = 200 # table comment on body
 
       # db comment top
+
+      [[d1_databases]]
+      binding = "DB_1"
+      database_name = "db-1-name"
+      database_id = "db-1-id"
 
       [[r2_buckets]]
       binding = "<BINDING_NAME1>"
@@ -407,8 +409,7 @@ describe('tomlJSONPathReplacer', () => {
     );
 
     expect(updatedTOML).toMatchInlineSnapshot(`
-      "queues.consumers = [ { queue = "queue-1" }, { queue = "queue-2" }]
-
+      "
       # Top-level configuration
       name = "my-worker"
       main = "src/index.js"
@@ -483,6 +484,12 @@ describe('tomlJSONPathReplacer', () => {
       directory = "./public"
       binding = "ASSETS"
       run_worker_first = [ "/api/*", "!/api/docs/*" ]
+
+      [[queues.consumers]]
+      queue = "queue-1"
+
+      [[queues.consumers]]
+      queue = "queue-2"
 
       [env.dev]
       vars = { x = "y" }"

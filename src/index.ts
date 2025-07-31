@@ -3,7 +3,7 @@ import { TOMLNode } from 'toml-eslint-parser/lib/ast';
 import TOML, { AnyJson } from '@iarna/toml';
 import { getPath, JSONPath, matchPaths, pathsAreEqual, PathTracker } from './paths';
 import _set from 'lodash.set';
-import { isPlainObject } from './utils';
+import { isArrayOfObjects, isPlainObject } from './utils';
 import { serializeKeyValue, serializePathToKey, serializeTable } from './serializer';
 
 const RANGE_START = 0;
@@ -32,18 +32,34 @@ function insert(
     }
   }
   if (!node) { // we didn't find any existing nodes so we can make a brand new entry in the top-level table
+    // only objects can be turned into tables, which are desirable because they can go to the bottom of the file
+    // non-objects get turned into kv pairs, which cannot safely go to the bottom,
+    // because they may get unintentionally added to some other table
     console.log('insert - adding new entry');
-    // objects can be turned to tables, which are fine to go at the bottom
-    if (isPlainObject(value)) {
+
+    if (isPlainObject(value)) { // we can create regular tables
       return [
         toml.trimEnd(),
         '\n\n',
         serializeTable(jsonPath, value),
       ].join('');
     }
-    // non-objects need to be represented as kv pairs at the top level
-    // and the safest place to insert them is at the top,
-    // where they won't get accidentally confused for another table's keys :/
+    if (isArrayOfObjects(value)) { // we can create table arrays
+      return [
+        toml.trimEnd(),
+        '\n\n',
+        value.map((item) => serializeTable(jsonPath, item, 'array')).join('\n\n'),
+      ].join('');
+    }
+    if (jsonPath.length >= 2) { // we have enough keys in the path to create a table name and a table body
+      const objectKey = jsonPath.pop()!;
+      return [
+        toml.trimEnd(),
+        '\n\n',
+        serializeTable(jsonPath, { [objectKey]: value }),
+      ].join('');
+    }
+    // we couldn't meet the criteria for a table so we have to use a kv pair, which will go at the top of the file
     return [
       serializeKeyValue(jsonPath, value),
       '\n\n',

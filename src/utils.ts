@@ -5,6 +5,6 @@ export function isPlainObject(value: unknown): value is object {
   return value.constructor === Object;
 }
 
-export function isNumeric(str: string) {
-  return !isNaN(Number(str));
+export function isArrayOfObjects(value: unknown): value is object[] {
+  return Array.isArray(value) && value.every((v) => isPlainObject(v));
 }
