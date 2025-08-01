@@ -69,11 +69,11 @@ function insert(
 
   switch (node.type) {
     case 'TOMLTable':
-      console.log('insert - updating table', node.kind);
+      console.log('insert - updating table', node.kind, 'with key', node.resolvedKey);
       if (node.kind === 'array') {
         if (pathsAreEqual(mostMatchedPath, node.resolvedKey)) { // adding something new to an existing table array
           console.log('insert - into table array');
-          const valuePath = jsonPath.slice(mostMatchedPath.length);
+          const valuePath = jsonPath.slice(node.resolvedKey.length);
           return [
             toml.slice(0, node.range[RANGE_END]).trimEnd(),
             '\n',
@@ -99,6 +99,7 @@ function insert(
           }
           return tomlJSONPathReplacer(tomlWithoutArray.trimEnd(), jsonPath, value) + toml.slice(lastEnd);
         }
+        console.log('insert - new table array entry');
         const lastNodeInArray = pathTracker.get([...mostMatchedPath, indexToInsert - 1]);
         if (!lastNodeInArray) {
           throw new Error(`Could not insert at ${[...mostMatchedPath, indexToInsert]}`);
@@ -113,7 +114,8 @@ function insert(
           toml.slice(lastNodeInArray.range[RANGE_END]),
         ].join('');
       } else {
-        const valuePath = jsonPath.slice(mostMatchedPath.length);
+        console.log('insert - updating existing standard table');
+        const valuePath = jsonPath.slice(node.resolvedKey.length);
         return [
           toml.slice(0, node.range[RANGE_END]).trimEnd(),
           '\n',

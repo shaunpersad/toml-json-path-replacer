@@ -627,7 +627,7 @@ cpu_ms = 100 # value
         # table body
         cpu_ms = 100
         flags.internal = [ "unlimited" ]
-        external = [ ] # value"
+        flags.external = [ ] # value"
       `);
     });
 
@@ -725,41 +725,37 @@ cpu_ms = 100 # value
 
       it('adds new kv pairs inside tables', () => {
         const updatedTOML = tomlJSONPathReplacer(
-          tomlWithStandardTable,
+          tomlWithNestedStandardTable,
           ['env', 'production', 'limits', 'flags'],
           ['unlimited', 'internal'],
         );
         expect(updatedTOML).toMatchInlineSnapshot(`
-          "# table
-          [limits] # key
+          "# nested table
+          [env.production.limits] # key
           # table body
-          cpu_ms = 100 # value
-
-          [env.production.limits]
-          flags = [ "unlimited", "internal" ]"
+          cpu_ms = 100
+          flags = [ "unlimited", "internal" ] # value"
         `);
       });
 
       it('adds nested kv pairs inside tables', () => {
         const updatedTOML = tomlJSONPathReplacer(
-          tomlWithStandardTable,
+          tomlWithNestedStandardTable,
           ['env', 'production', 'limits', 'flags', 'internal'],
           ['unlimited'],
         );
         expect(updatedTOML).toMatchInlineSnapshot(`
-          "# table
-          [limits] # key
+          "# nested table
+          [env.production.limits] # key
           # table body
-          cpu_ms = 100 # value
-
-          [env.production.limits.flags]
-          internal = [ "unlimited" ]"
+          cpu_ms = 100
+          flags.internal = [ "unlimited" ] # value"
         `);
       });
 
       it('adds nested kv pairs inside tables when ancestor already exists', () => {
         const updatedTOML1 = tomlJSONPathReplacer(
-          tomlWithStandardTable,
+          tomlWithNestedStandardTable,
           ['env', 'production', 'limits', 'flags', 'internal'],
           ['unlimited'],
         );
@@ -769,14 +765,12 @@ cpu_ms = 100 # value
           [],
         );
         expect(updatedTOML2).toMatchInlineSnapshot(`
-          "# table
-          [limits] # key
+          "# nested table
+          [env.production.limits] # key
           # table body
-          cpu_ms = 100 # value
-
-          [env.production.limits.flags]
-          internal = [ "unlimited" ]
-          external = [ ]"
+          cpu_ms = 100
+          flags.internal = [ "unlimited" ]
+          flags.external = [ ] # value"
         `);
       });
 
