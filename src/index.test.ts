@@ -501,7 +501,11 @@ database_id = "<DATABASE_ID_1>"
 cpu_ms = 100 # value
 `.trim();
     it('adds new tables to a blank toml', () => {
-      const updatedTOML = tomlJSONPathReplacer('', ['limits'], { cpu_ms: 100 });
+      const updatedTOML = tomlJSONPathReplacer(
+        '',
+        ['limits'],
+        { cpu_ms: 100 },
+      );
       expect(updatedTOML).toMatchInlineSnapshot(`
         "[limits]
         cpu_ms = 100"
@@ -526,16 +530,28 @@ cpu_ms = 100 # value
     });
 
     it('replaces existing tables', () => {
-      const updatedTOML = tomlJSONPathReplacer(tomlWithStandardTable, ['limits'], { wall_time: 60 });
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithStandardTable,
+        ['limits'],
+        {
+          wall_time: 60,
+          something: { else: [{ inner: 'foo' }] },
+        },
+      );
       expect(updatedTOML).toMatchInlineSnapshot(`
         "# table
         [limits]
-        wall_time = 60 # value"
+        wall_time = 60
+        something = { else = [ { inner = "foo" } ] } # value"
       `);
     });
 
     it('replaces kv pairs inside tables', () => {
-      const updatedTOML = tomlJSONPathReplacer(tomlWithStandardTable, ['limits', 'cpu_ms'], 500);
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithStandardTable,
+        ['limits', 'cpu_ms'],
+        500,
+      );
       expect(updatedTOML).toMatchInlineSnapshot(`
         "# table
         [limits] # key
@@ -572,7 +588,11 @@ cpu_ms = 100 # value
     });
 
     it('converts a kv pair inside of a table from one type to another', () => {
-      const updatedTOML = tomlJSONPathReplacer(tomlWithStandardTable, ['limits', 'cpu_ms'], { time: 1000 });
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithStandardTable,
+        ['limits', 'cpu_ms'],
+        { time: 1000 },
+      );
       expect(updatedTOML).toMatchInlineSnapshot(`
         "# table
         [limits] # key
@@ -587,7 +607,11 @@ cpu_ms = 100 # value
         ['limits', 'cpu_ms'],
         { time: 1000, units: 'ms' },
       );
-      const updatedTOML2 = tomlJSONPathReplacer(updatedTOML1, ['limits', 'cpu_ms', 'time'], 2000);
+      const updatedTOML2 = tomlJSONPathReplacer(
+        updatedTOML1,
+        ['limits', 'cpu_ms', 'time'],
+        2000,
+      );
       expect(updatedTOML2).toMatchInlineSnapshot(`
         "# table
         [limits] # key
@@ -597,7 +621,11 @@ cpu_ms = 100 # value
     });
 
     it('adds new kv pairs inside tables', () => {
-      const updatedTOML = tomlJSONPathReplacer(tomlWithStandardTable, ['limits', 'flags'], ['unlimited', 'internal']);
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithStandardTable,
+        ['limits', 'flags'],
+        ['unlimited', 'internal'],
+      );
       expect(updatedTOML).toMatchInlineSnapshot(`
         "# table
         [limits] # key
@@ -608,7 +636,11 @@ cpu_ms = 100 # value
     });
 
     it('adds nested kv pairs inside tables', () => {
-      const updatedTOML = tomlJSONPathReplacer(tomlWithStandardTable, ['limits', 'flags', 'internal'], ['unlimited']);
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithStandardTable,
+        ['limits', 'flags', 'internal'],
+        ['unlimited'],
+      );
       expect(updatedTOML).toMatchInlineSnapshot(`
         "# table
         [limits] # key
@@ -619,8 +651,16 @@ cpu_ms = 100 # value
     });
 
     it('adds nested kv pairs inside tables when ancestor already exists', () => {
-      const updatedTOML1 = tomlJSONPathReplacer(tomlWithStandardTable, ['limits', 'flags', 'internal'], ['unlimited']);
-      const updatedTOML2 = tomlJSONPathReplacer(updatedTOML1, ['limits', 'flags', 'external'], []);
+      const updatedTOML1 = tomlJSONPathReplacer(
+        tomlWithStandardTable,
+        ['limits', 'flags', 'internal'],
+        ['unlimited'],
+      );
+      const updatedTOML2 = tomlJSONPathReplacer(
+        updatedTOML1,
+        ['limits', 'flags', 'external'],
+        [],
+      );
       expect(updatedTOML2).toMatchInlineSnapshot(`
         "# table
         [limits] # key
@@ -639,7 +679,11 @@ cpu_ms = 100 # value
 cpu_ms = 100 # value
 `.trim();
       it('adds new tables to a blank toml', () => {
-        const updatedTOML = tomlJSONPathReplacer('', ['env', 'production', 'limits'], { cpu_ms: 100 });
+        const updatedTOML = tomlJSONPathReplacer(
+          '',
+          ['env', 'production', 'limits'],
+          { cpu_ms: 100 },
+        );
         expect(updatedTOML).toMatchInlineSnapshot(`
           "[env.production.limits]
           cpu_ms = 100"
@@ -649,8 +693,8 @@ cpu_ms = 100 # value
       it('adds new tables with existing tables', () => {
         const updatedTOML = tomlJSONPathReplacer(
           tomlWithNestedStandardTable,
-          ['env', 'staging', 'limits'],
-          { cpu_ms: 300 },
+          ['env', 'production', 'another_one'],
+          { another: 'one' },
         );
         expect(updatedTOML).toMatchInlineSnapshot(`
           "# nested table
@@ -658,8 +702,8 @@ cpu_ms = 100 # value
           # table body
           cpu_ms = 100 # value
 
-          [env.staging.limits]
-          cpu_ms = 300"
+          [env.production.another_one]
+          another = "one""
         `);
       });
 
@@ -667,12 +711,16 @@ cpu_ms = 100 # value
         const updatedTOML = tomlJSONPathReplacer(
           tomlWithNestedStandardTable,
           ['env', 'production', 'limits'],
-          { wall_time: 60 },
+          {
+            wall_time: 60,
+            something: { else: [{ inner: 'foo' }] },
+          },
         );
         expect(updatedTOML).toMatchInlineSnapshot(`
           "# nested table
           [env.production.limits]
-          wall_time = 60 # value"
+          wall_time = 60
+          something = { else = [ { inner = "foo" } ] } # value"
         `);
       });
 
@@ -687,6 +735,21 @@ cpu_ms = 100 # value
           [env.production.limits] # key
           # table body
           cpu_ms = 500 # value"
+        `);
+      });
+
+      it('reduces the table if needed', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedStandardTable,
+          ['env', 'production', 'limits'],
+          500,
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+           # value
+
+          [env.production]
+          limits = 500"
         `);
       });
 
@@ -771,6 +834,564 @@ cpu_ms = 100 # value
           cpu_ms = 100
           flags.internal = [ "unlimited" ]
           flags.external = [ ] # value"
+        `);
+      });
+    });
+
+  });
+
+  describe('array tables', () => {
+    const tomlWithArrayTable = `
+# table
+[[d1_databases]] # key
+# table body
+binding = "MY_DATABASE" # db comment on body
+database_name = "my-database-name"
+database_id = "my-database-id"
+`.trim();
+    it('adds new array tables to a blank toml', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        '',
+        ['d1_databases'],
+        [
+          {
+            binding: 'DATABASE_1',
+            database_name: 'database-name-1',
+            database_id: 'database-id-1',
+          },
+        ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "[[d1_databases]]
+        binding = "DATABASE_1"
+        database_name = "database-name-1"
+        database_id = "database-id-1""
+      `);
+    });
+
+    it('adds new array tables with multiple values to a blank toml', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        '',
+        ['d1_databases'],
+        [
+          {
+            binding: 'DATABASE_1',
+            database_name: 'database-name-1',
+            database_id: 'database-id-1',
+          },
+          {
+            binding: 'DATABASE_2',
+            database_name: 'database-name-2',
+            database_id: 'database-id-2',
+          },
+        ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "[[d1_databases]]
+        binding = "DATABASE_1"
+        database_name = "database-name-1"
+        database_id = "database-id-1"
+
+        [[d1_databases]]
+        binding = "DATABASE_2"
+        database_name = "database-name-2"
+        database_id = "database-id-2""
+      `);
+    });
+
+    it('adds new array tables with existing array tables', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['another_one'],
+        [
+          { item: 'one' },
+          { item: 'two' },
+        ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]] # key
+        # table body
+        binding = "MY_DATABASE" # db comment on body
+        database_name = "my-database-name"
+        database_id = "my-database-id"
+
+        [[another_one]]
+        item = "one"
+
+        [[another_one]]
+        item = "two""
+      `);
+    });
+
+    it('replaces existing tables', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases'],
+        [
+          {
+            binding: 'DATABASE_1',
+            database_name: 'database-name-1',
+            database_id: 'database-id-1',
+          },
+          {
+            binding: 'DATABASE_2',
+            database_name: 'database-name-2',
+            database_id: 'database-id-2',
+          },
+        ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# table
+
+        [[d1_databases]]
+        binding = "DATABASE_1"
+        database_name = "database-name-1"
+        database_id = "database-id-1"
+
+        [[d1_databases]]
+        binding = "DATABASE_2"
+        database_name = "database-name-2"
+        database_id = "database-id-2""
+      `);
+    });
+
+    it('replaces existing table entries', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases', 0],
+        {
+          binding: 'DATABASE_1',
+          database_name: 'database-name-1',
+          database_id: 'database-id-1',
+        },
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]]
+        binding = "DATABASE_1"
+        database_name = "database-name-1"
+        database_id = "database-id-1""
+      `);
+    });
+
+    it('adds new table entries', () => {
+      const updatedTOML1 = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases', 0],
+        {
+          binding: 'DATABASE_1',
+          database_name: 'database-name-1',
+          database_id: 'database-id-1',
+        },
+      );
+      const updatedTOML2 = tomlJSONPathReplacer(
+        updatedTOML1,
+        ['d1_databases', 1],
+        {
+          binding: 'DATABASE_2',
+          database_name: 'database-name-2',
+          database_id: 'database-id-2',
+        },
+      );
+      expect(updatedTOML2).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]]
+        binding = "DATABASE_1"
+        database_name = "database-name-1"
+        database_id = "database-id-1"
+
+        [[d1_databases]]
+        binding = "DATABASE_2"
+        database_name = "database-name-2"
+        database_id = "database-id-2""
+      `);
+    });
+
+    it('replaces kv pairs inside array tables', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases', 0, 'binding'],
+        'NEW_DB_BINDING',
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]] # key
+        # table body
+        binding = "NEW_DB_BINDING" # db comment on body
+        database_name = "my-database-name"
+        database_id = "my-database-id""
+      `);
+    });
+
+    it('adds new kv pairs', () => {
+      const updatedTOML = tomlJSONPathReplacer(tomlWithArrayTable, ['d1_databases', 0, 'region'], 'WNAM');
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]] # key
+        # table body
+        binding = "MY_DATABASE" # db comment on body
+        database_name = "my-database-name"
+        database_id = "my-database-id"
+        region = "WNAM""
+      `);
+    });
+
+    it('converts a kv pair inside of an array table from one type to another', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases', 0, 'binding'],
+        { name: 'MY_BINDING' },
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]] # key
+        # table body
+        binding = { name = "MY_BINDING" } # db comment on body
+        database_name = "my-database-name"
+        database_id = "my-database-id""
+      `);
+    });
+
+    it('updates a nested key', () => {
+      const updatedTOML1 = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases', 0, 'binding'],
+        { name: 'MY_BINDING' },
+      );
+      const updatedTOML2 = tomlJSONPathReplacer(
+        updatedTOML1,
+        ['d1_databases', 0, 'binding', 'name'],
+        'MY_NEW_BINDING',
+      );
+      expect(updatedTOML2).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]] # key
+        # table body
+        binding = { name = "MY_NEW_BINDING" } # db comment on body
+        database_name = "my-database-name"
+        database_id = "my-database-id""
+      `);
+    });
+
+    it('adds nested kv pairs inside tables', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases', 0, 'flags', 'internal'],
+        ['unlimited'],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]] # key
+        # table body
+        binding = "MY_DATABASE" # db comment on body
+        database_name = "my-database-name"
+        database_id = "my-database-id"
+        flags.internal = [ "unlimited" ]"
+      `);
+    });
+
+    it('adds nested kv pairs inside tables when ancestor already exists', () => {
+      const updatedTOML1 = tomlJSONPathReplacer(
+        tomlWithArrayTable,
+        ['d1_databases', 0, 'limits', 'flags', 'internal'],
+        ['unlimited'],
+      );
+      const updatedTOML2 = tomlJSONPathReplacer(
+        updatedTOML1,
+        ['d1_databases', 0, 'limits', 'flags', 'external'],
+        [],
+      );
+      expect(updatedTOML2).toMatchInlineSnapshot(`
+        "# table
+        [[d1_databases]] # key
+        # table body
+        binding = "MY_DATABASE" # db comment on body
+        database_name = "my-database-name"
+        database_id = "my-database-id"
+        limits.flags.internal = [ "unlimited" ]
+        limits.flags.external = [ ]"
+      `);
+    });
+
+    describe('nested tables', () => {
+      const tomlWithNestedArrayTable = `
+# nested table
+[[env.production.d1_databases]] # key
+# table body
+binding = "MY_DATABASE" # db comment on body
+database_name = "my-database-name"
+database_id = "my-database-id"
+`.trim();
+
+      it('adds new array tables to a blank toml', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          '',
+          ['env', 'production', 'd1_databases'],
+          [
+            {
+              binding: 'DATABASE_1',
+              database_name: 'database-name-1',
+              database_id: 'database-id-1',
+            },
+          ],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "[[env.production.d1_databases]]
+          binding = "DATABASE_1"
+          database_name = "database-name-1"
+          database_id = "database-id-1""
+        `);
+      });
+
+      it('adds new array tables with multiple values to a blank toml', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases'],
+          [
+            {
+              binding: 'DATABASE_1',
+              database_name: 'database-name-1',
+              database_id: 'database-id-1',
+            },
+            {
+              binding: 'DATABASE_2',
+              database_name: 'database-name-2',
+              database_id: 'database-id-2',
+            },
+          ],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+
+          [[env.production.d1_databases]]
+          binding = "DATABASE_1"
+          database_name = "database-name-1"
+          database_id = "database-id-1"
+
+          [[env.production.d1_databases]]
+          binding = "DATABASE_2"
+          database_name = "database-name-2"
+          database_id = "database-id-2""
+        `);
+      });
+
+      it('adds new array tables with existing array tables', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'another_one'],
+          [
+            { item: 'one' },
+            { item: 'two' },
+          ],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]] # key
+          # table body
+          binding = "MY_DATABASE" # db comment on body
+          database_name = "my-database-name"
+          database_id = "my-database-id"
+
+          [[env.production.another_one]]
+          item = "one"
+
+          [[env.production.another_one]]
+          item = "two""
+        `);
+      });
+
+      it('replaces existing tables', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases'],
+          [
+            {
+              binding: 'DATABASE_1',
+              database_name: 'database-name-1',
+              database_id: 'database-id-1',
+            },
+            {
+              binding: 'DATABASE_2',
+              database_name: 'database-name-2',
+              database_id: 'database-id-2',
+            },
+          ],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+
+          [[env.production.d1_databases]]
+          binding = "DATABASE_1"
+          database_name = "database-name-1"
+          database_id = "database-id-1"
+
+          [[env.production.d1_databases]]
+          binding = "DATABASE_2"
+          database_name = "database-name-2"
+          database_id = "database-id-2""
+        `);
+      });
+
+      it('replaces existing table entries', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0],
+          {
+            binding: 'DATABASE_1',
+            database_name: 'database-name-1',
+            database_id: 'database-id-1',
+          },
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]]
+          binding = "DATABASE_1"
+          database_name = "database-name-1"
+          database_id = "database-id-1""
+        `);
+      });
+
+      it('adds new table entries', () => {
+        const updatedTOML1 = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0],
+          {
+            binding: 'DATABASE_1',
+            database_name: 'database-name-1',
+            database_id: 'database-id-1',
+          },
+        );
+        const updatedTOML2 = tomlJSONPathReplacer(
+          updatedTOML1,
+          ['env', 'production', 'd1_databases', 1],
+          {
+            binding: 'DATABASE_2',
+            database_name: 'database-name-2',
+            database_id: 'database-id-2',
+          },
+        );
+        expect(updatedTOML2).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]]
+          binding = "DATABASE_1"
+          database_name = "database-name-1"
+          database_id = "database-id-1"
+
+          [[env.production.d1_databases]]
+          binding = "DATABASE_2"
+          database_name = "database-name-2"
+          database_id = "database-id-2""
+        `);
+      });
+
+      it('replaces kv pairs inside array tables', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0, 'binding'],
+          'NEW_DB_BINDING',
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]] # key
+          # table body
+          binding = "NEW_DB_BINDING" # db comment on body
+          database_name = "my-database-name"
+          database_id = "my-database-id""
+        `);
+      });
+
+      it('adds new kv pairs', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0, 'region'],
+          'WNAM',
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]] # key
+          # table body
+          binding = "MY_DATABASE" # db comment on body
+          database_name = "my-database-name"
+          database_id = "my-database-id"
+          region = "WNAM""
+        `);
+      });
+
+      it('converts a kv pair inside of an array table from one type to another', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0, 'binding'],
+          { name: 'MY_BINDING' },
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]] # key
+          # table body
+          binding = { name = "MY_BINDING" } # db comment on body
+          database_name = "my-database-name"
+          database_id = "my-database-id""
+        `);
+      });
+
+      it('updates a nested key', () => {
+        const updatedTOML1 = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0, 'binding'],
+          { name: 'MY_BINDING' },
+        );
+        const updatedTOML2 = tomlJSONPathReplacer(
+          updatedTOML1,
+          ['env', 'production', 'd1_databases', 0, 'binding', 'name'],
+          'MY_NEW_BINDING',
+        );
+        expect(updatedTOML2).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]] # key
+          # table body
+          binding = { name = "MY_NEW_BINDING" } # db comment on body
+          database_name = "my-database-name"
+          database_id = "my-database-id""
+        `);
+      });
+
+      it('adds nested kv pairs inside tables', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0, 'flags', 'internal'],
+          ['unlimited'],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]] # key
+          # table body
+          binding = "MY_DATABASE" # db comment on body
+          database_name = "my-database-name"
+          database_id = "my-database-id"
+          flags.internal = [ "unlimited" ]"
+        `);
+      });
+
+      it('adds nested kv pairs inside tables when ancestor already exists', () => {
+        const updatedTOML1 = tomlJSONPathReplacer(
+          tomlWithNestedArrayTable,
+          ['env', 'production', 'd1_databases', 0, 'limits', 'flags', 'internal'],
+          ['unlimited'],
+        );
+        const updatedTOML2 = tomlJSONPathReplacer(
+          updatedTOML1,
+          ['env', 'production', 'd1_databases', 0, 'limits', 'flags', 'external'],
+          [],
+        );
+        expect(updatedTOML2).toMatchInlineSnapshot(`
+          "# nested table
+          [[env.production.d1_databases]] # key
+          # table body
+          binding = "MY_DATABASE" # db comment on body
+          database_name = "my-database-name"
+          database_id = "my-database-id"
+          limits.flags.internal = [ "unlimited" ]
+          limits.flags.external = [ ]"
         `);
       });
 

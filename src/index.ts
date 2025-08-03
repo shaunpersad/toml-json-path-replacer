@@ -1,9 +1,9 @@
 import { parseForESLint, traverseNodes } from 'toml-eslint-parser';
-import { TOMLNode } from 'toml-eslint-parser/lib/ast';
+import { TOMLNode, TOMLTable } from 'toml-eslint-parser/lib/ast';
 import TOML, { AnyJson } from '@iarna/toml';
 import { getPath, JSONPath, matchPaths, pathsAreEqual, PathTracker } from './paths';
 import _set from 'lodash.set';
-import { isArrayOfObjects, isPlainObject } from './utils';
+import { isArrayOfObjects, isNumeric, isPlainObject } from './utils';
 import { serializeKeyValue, serializePathToKey, serializeTable } from './serializer';
 
 const RANGE_START = 0;
@@ -71,21 +71,41 @@ function insert(
     case 'TOMLTable':
       console.log('insert - updating table', node.kind, 'with key', node.resolvedKey);
       if (node.kind === 'array') {
-        if (pathsAreEqual(mostMatchedPath, node.resolvedKey)) { // adding something new to an existing table array
-          console.log('insert - into table array');
-          const valuePath = jsonPath.slice(node.resolvedKey.length);
+        const entireTableArrayPath = node.resolvedKey.slice(0, -1); // remove index
+        // are we targeting an array element?
+        if (jsonPath.length === node.resolvedKey.length && isNumeric(jsonPath[jsonPath.length - 1])) {
+          if (!isPlainObject(value)) {
+            throw new Error('Table array bodies can only consist of key-value pairs.');
+          }
+          const targetedIndex = Number(jsonPath[jsonPath.length - 1]);
+          const existingElement = pathTracker.get([...entireTableArrayPath, targetedIndex]);
+          if (!existingElement) {
+            const lastElement = pathTracker.get([...entireTableArrayPath, targetedIndex - 1]);
+            if (!lastElement) {
+              throw new Error('Cannot skip array elements.');
+            }
+            return [
+              toml.slice(0, lastElement.range[RANGE_END]).trimEnd(),
+              '\n\n',
+              serializeTable(entireTableArrayPath, value, node.kind),
+              toml.slice(lastElement.range[RANGE_END]),
+            ].join('');
+          }
+          if (existingElement.type !== 'TOMLTable' || existingElement.kind !== 'array') {
+            throw new Error('Expecting a table array.'); // this shouldn't happen
+          }
           return [
-            toml.slice(0, node.range[RANGE_END]).trimEnd(),
-            '\n',
-            serializeKeyValue(valuePath, value),
-            toml.slice(node.range[RANGE_END]),
+            toml.slice(0, existingElement.range[RANGE_START]).trimEnd(),
+            '\n\n',
+            serializeTable(jsonPath, value, 'array'),
+            toml.slice(existingElement.range[RANGE_END]),
           ].join('');
         }
-        const indexToInsert = Number(jsonPath[mostMatchedPath.length]);
-        console.log({ nodeKeys: node.resolvedKey, jsonPath, mostMatchedPath, indexToInsert });
         if (
-          pathsAreEqual(jsonPath, mostMatchedPath) || // replacing the entire set of table arrays
-          !Number.isFinite(indexToInsert) // not a valid array index so we're prob changing types
+          // we're targeting the whole array
+          pathsAreEqual(jsonPath, entireTableArrayPath) ||
+          // we're trying to update an array index with an invalid index, which is a type change
+          !isNumeric(jsonPath[node.resolvedKey.length - 1])
         ) { // remove the table arrays and try again
           console.log('insert - removing table arrays');
           let tomlWithoutArray = '';
@@ -99,19 +119,14 @@ function insert(
           }
           return tomlJSONPathReplacer(tomlWithoutArray.trimEnd(), jsonPath, value) + toml.slice(lastEnd);
         }
-        console.log('insert - new table array entry');
-        const lastNodeInArray = pathTracker.get([...mostMatchedPath, indexToInsert - 1]);
-        if (!lastNodeInArray) {
-          throw new Error(`Could not insert at ${[...mostMatchedPath, indexToInsert]}`);
-        }
-        if (!isPlainObject(value)) {
-          throw new Error('Only objects can be inserted into a table array.');
-        }
+        // we're adding a new kv pair into an existing element
+        console.log('insert - into table array');
+        const valuePath = jsonPath.slice(node.resolvedKey.length);
         return [
-          toml.slice(0, lastNodeInArray.range[RANGE_END]).trimEnd(),
-          '\n\n',
-          serializeTable(node.resolvedKey.slice(0, -1), value, node.kind),
-          toml.slice(lastNodeInArray.range[RANGE_END]),
+          toml.slice(0, node.range[RANGE_END]).trimEnd(),
+          '\n',
+          serializeKeyValue(valuePath, value),
+          toml.slice(node.range[RANGE_END]),
         ].join('');
       } else {
         console.log('insert - updating existing standard table');
