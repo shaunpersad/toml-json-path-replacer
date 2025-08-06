@@ -140,33 +140,60 @@ function insert(
       }
     case 'TOMLArray': {
       console.log('insert - updating array');
-      const indexToInsert = Number(jsonPath[mostMatchedPath.length]);
-      if (!Number.isFinite(indexToInsert)) {
-        throw new Error('Cannot convert an array item to another type.');
+      let arrayPath: JSONPath = [];
+      let valuePath: JSONPath = [];
+      for (let index = 0; index < jsonPath.length; index++) {
+        arrayPath = jsonPath.slice(0, -index);
+        if (node === pathTracker.get(arrayPath)) {
+          valuePath = jsonPath.slice(jsonPath.length - index);
+          break;
+        }
       }
-      if (indexToInsert !== node.elements.length) {
+      if (!isNumeric(valuePath[0])) { // the element index is not a number, so we're converting the array to an object
+        const body = _set({}, valuePath, value);
+        return [
+          toml.slice(0, node.range[RANGE_START]),
+          TOML.stringify.value(body as AnyJson),
+          toml.slice(node.range[RANGE_END]),
+        ].join('');
+      }
+      const indexToInsert = Number(valuePath.shift());
+      if (indexToInsert > node.elements.length) {
         throw new Error('Cannot skip array elements when inserting.');
       }
-      const isMultiLine = node.loc.start.line !== node.loc.end.line;
-      const lastElement = node.elements.length ? node.elements[node.elements.length - 1] : null;
-      if (!lastElement) {
-        if (!isMultiLine) {
-          return [
-            toml.slice(0, node.range[RANGE_START]),
-            `[${TOML.stringify.value(value as AnyJson)}]`, // we cant have comments inside the array so this is ok
-            toml.slice(node.range[RANGE_END]),
-          ].join('');
-        }
+      const body = valuePath.length ? _set({}, valuePath, value) : value;
+      const existingElement = pathTracker.get([...arrayPath, indexToInsert]);
+      if (existingElement) { // replace an existing array item
         return [
-          toml.slice(0, node.range[RANGE_END] - 1), // preserve whatever was inside the array
-          TOML.stringify.value(value as AnyJson),
-          toml.slice(node.range[RANGE_END] - 1),
-        ].join('\n');
+          toml.slice(0, existingElement.range[RANGE_START]),
+          TOML.stringify.value(body as AnyJson),
+          toml.slice(existingElement.range[RANGE_END]),
+        ].join('');
       }
+      if (!node.elements.length) { // it's an empty array so we can just reconstruct it
+        return [
+          toml.slice(0, node.range[RANGE_START]),
+          TOML.stringify.value([body] as AnyJson),
+          toml.slice(node.range[RANGE_END]),
+        ].join('');
+      }
+      // insert right after the last element, preserving the indent
+      const lastElement = node.elements[node.elements.length - 1];
+      const elementBefore = node.elements[node.elements.length - 2];
+      const start = elementBefore ? elementBefore.range[RANGE_END] : node.range[RANGE_START] + 1;
+      const betweenElements = toml.slice(start, lastElement.range[RANGE_START]);
+      const spaceBetweenElements = (betweenElements.split('\n').pop() ?? '').replace(',', '');
+      const toArrayEnd = toml.slice(lastElement.range[RANGE_END], node.range[RANGE_END] - 1);
+      const [lastElementRestOfLine] = toArrayEnd.replace(',', '').split('\n');
+      const toArrayEndExcludingLastElementRestOfLine = toArrayEnd.replace(',', '').split('\n').pop();
       return [
         toml.slice(0, lastElement.range[RANGE_END]),
-        isMultiLine ? ',\n' : ', ',
-        TOML.stringify.value(value as AnyJson),
+        ',',
+        toArrayEnd.includes('\n') ? `${lastElementRestOfLine}\n` : '',
+        spaceBetweenElements,
+        TOML.stringify.value(body as AnyJson),
+        toArrayEnd.includes('\n') ? '\n' : '',
+        toArrayEndExcludingLastElementRestOfLine,
         toml.slice(node.range[RANGE_END] - 1),
       ].join('');
     }

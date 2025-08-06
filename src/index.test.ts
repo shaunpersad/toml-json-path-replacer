@@ -418,8 +418,9 @@ database_id = "<DATABASE_ID_1>"
 
         # kv comment top
         kv_namespaces = [
-          { binding = "<MY_NAMESPACE>", id = "<KV_ID>" },
-        { binding = "KV_NAMESPACE_1", id = "kv-namespace-id-1" }]
+          { binding = "<MY_NAMESPACE>", id = "<KV_ID>" }, # kv comment inline
+          { binding = "KV_NAMESPACE_1", id = "kv-namespace-id-1" }
+        ]
 
         queues.producers = [
           { binding = "<BINDING_NAME1>", queue = "<QUEUE_NAME1>" } # inline queue comment
@@ -490,6 +491,314 @@ database_id = "<DATABASE_ID_1>"
         [env.dev]
         vars = { x = "y" }"
       `);
+    });
+  });
+
+  describe('arrays', () => {
+    const tomlWithArray = `
+# array
+compatibility_flags = [ "formdata_parser_supports_files", "nodejs_compat" ]    
+`;
+    it('adds new arrays to a blank toml', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        '',
+        ['compatibility_flags'],
+        [
+          'formdata_parser_supports_files',
+          'nodejs_compat',
+        ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(
+        '"compatibility_flags = [ "formdata_parser_supports_files", "nodejs_compat" ]"',
+      );
+    });
+
+    it('adds new arrays with existing arrays', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['crons'],
+        [ '*/3 * * * *', '0 15 1 * *', '59 23 LW * *' ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "crons = [ "*/3 * * * *", "0 15 1 * *", "59 23 LW * *" ]
+
+        # array
+        compatibility_flags = [ "formdata_parser_supports_files", "nodejs_compat" ]"
+      `);
+    });
+
+    it('replaces existing arrays', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags'],
+        [
+          'nodejs_als',
+        ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = [ "nodejs_als" ]    
+        "
+      `);
+    });
+
+    it('replaces items inside arrays', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags', 1],
+        'nodejs_als',
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = [ "formdata_parser_supports_files", "nodejs_als" ]    
+        "
+      `);
+    });
+
+    it('adds new items to arrays', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags', 2],
+        'nodejs_als',
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = [ "formdata_parser_supports_files", "nodejs_compat", "nodejs_als" ]    
+        "
+      `);
+    });
+
+    it('adds nested items to arrays', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags', 2, 'foo'],
+        'bar',
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = [ "formdata_parser_supports_files", "nodejs_compat", { foo = "bar" } ]    
+        "
+      `);
+    });
+
+    it('does not allow skipping array indexes', () => {
+      expect(() => tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags', 3],
+        'nodejs_als',
+      )).toThrowErrorMatchingInlineSnapshot('[Error: Cannot skip array elements when inserting.]');
+    });
+
+    it('allows mixing array item types', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags', 1],
+        { foo: 'bar' },
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = [ "formdata_parser_supports_files", { foo = "bar" } ]    
+        "
+      `);
+    });
+
+    it('does not convert arrays to table arrays if given an array of objects', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags'],
+        [
+          { foo: 'bar' },
+        ],
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = [ { foo = "bar" } ]    
+        "
+      `);
+    });
+
+    it('replaces nested items inside array elements', () => {
+      const updatedTOML1 = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags'],
+        [
+          { foo: { bar: 'baz' } },
+        ],
+      );
+      const updatedTOML2 = tomlJSONPathReplacer(
+        updatedTOML1,
+        ['compatibility_flags', 0, 'foo', 'bar'],
+        [
+          'hello',
+        ],
+      );
+      expect(updatedTOML2).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = [ { foo = { bar = [ "hello" ] } } ]    
+        "
+      `);
+    });
+
+    it('converts the array to an object if a non-numeric index is given', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithArray,
+        ['compatibility_flags', 'foo', 'bar'],
+        'baz',
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # array
+        compatibility_flags = { foo = { bar = "baz" } }    
+        "
+      `);
+    });
+
+    describe('multi-line arrays', () => {
+      const tomlWithMultiLineArray = `
+# array
+kv_namespaces = [
+  # comment inside array
+  { binding = "<MY_NAMESPACE>", id = "<KV_ID>" } # comment inline
+] 
+`;
+
+      it('replaces existing arrays', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces'],
+          [
+            { binding: 'MY_KV', id: 'my-kv-id' },
+          ],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          kv_namespaces = [ { binding = "MY_KV", id = "my-kv-id" } ] 
+          "
+        `);
+      });
+
+      it('replaces items inside arrays', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 0],
+          { binding: 'MY_KV', id: 'my-kv-id' },
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          kv_namespaces = [
+            # comment inside array
+            { binding = "MY_KV", id = "my-kv-id" } # comment inline
+          ] 
+          "
+        `);
+      });
+
+      it('adds new items to arrays', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 1],
+          { binding: 'ANOTHER_KV', id: 'another-kv-id' },
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          kv_namespaces = [
+            # comment inside array
+            { binding = "<MY_NAMESPACE>", id = "<KV_ID>" }, # comment inline
+            { binding = "ANOTHER_KV", id = "another-kv-id" }
+          ] 
+          "
+        `);
+      });
+
+      it('adds nested items to arrays', () => {
+        const updatedTOML1 = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 1, 'binding'],
+          'ANOTHER_KV',
+        );
+        const updatedTOML2 = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 1, 'id'],
+          'another-kv-id',
+        );
+        expect(updatedTOML2).toMatchInlineSnapshot(`
+          "
+          # array
+          kv_namespaces = [
+            # comment inside array
+            { binding = "<MY_NAMESPACE>", id = "<KV_ID>" }, # comment inline
+            { id = "another-kv-id" }
+          ] 
+          "
+        `);
+      });
+
+      it('does not allow skipping array indexes', () => {
+        expect(() => tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 3],
+          'nodejs_als',
+        )).toThrowErrorMatchingInlineSnapshot('[Error: Cannot skip array elements when inserting.]');
+      });
+
+      it('allows mixing array item types', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 1],
+          { foo: 'bar' },
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          kv_namespaces = [
+            # comment inside array
+            { binding = "<MY_NAMESPACE>", id = "<KV_ID>" }, # comment inline
+            { foo = "bar" }
+          ] 
+          "
+        `);
+      });
+
+      it('replaces nested items inside array elements', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 0, 'binding'],
+          'MY_KV',
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          kv_namespaces = [
+            # comment inside array
+            { binding = "MY_KV", id = "<KV_ID>" } # comment inline
+          ] 
+          "
+        `);
+      });
+
+      it('converts the array to an object if a non-numeric index is given', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithMultiLineArray,
+          ['kv_namespaces', 'foo', 'bar'],
+          'baz',
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          kv_namespaces = { foo = { bar = "baz" } } 
+          "
+        `);
+      });
     });
   });
 

@@ -1,6 +1,8 @@
 import { TOMLNode } from 'toml-eslint-parser/lib/ast';
 
-export type JSONPath = Array<string | number>;
+export type JSONPathKey = string | number;
+
+export type JSONPath = Array<JSONPathKey>;
 
 export function getPath(node: TOMLNode, keys: JSONPath = []): JSONPath {
   const { parent } = node;

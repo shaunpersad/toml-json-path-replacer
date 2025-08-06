@@ -1,8 +1,8 @@
 import TOML, { AnyJson } from '@iarna/toml';
-import { JSONPath } from './paths';
+import { JSONPath, JSONPathKey } from './paths';
 import { TOMLTable } from 'toml-eslint-parser/lib/ast';
 
-export function serializeKey(value: string | number) {
+export function serializeKey(value: JSONPathKey) {
   return value.toString().includes('.') ? JSON.stringify(value) : value;
 }
 
@@ -14,8 +14,8 @@ export function serializePathToKey(path: JSONPath) {
     .join('.');
 }
 
-export function serializeKeyValue(key: JSONPath, value: unknown) {
-  return `${serializePathToKey(key)} = ${TOML.stringify.value(value as AnyJson)}`;
+export function serializeKeyValue(path: JSONPath, value: unknown) {
+  return `${serializePathToKey(path)} = ${TOML.stringify.value(value as AnyJson)}`;
 }
 
 export function serializeTable(path: JSONPath, value: object, type: TOMLTable['kind'] = 'standard') {
