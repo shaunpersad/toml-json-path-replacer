@@ -59,7 +59,22 @@ updatedTOML = tomlJSONPathReplacer(toml, ['env', 'staging', 'route', 'pattern'],
 // [env.staging]
 // # Overrides above
 // route = { pattern = "api.staging.example.org/*", zone_name = "example.org" }
+
+updatedTOML = tomlJSONPathReplacer(toml, ['env', 'staging', 'route'], {
+    pattern: 'api.staging.example.com/*',
+    zone_name: 'api.staging.example.com',
+});
+// [env.staging]
+// # Overrides above
+// route = { pattern = "api.staging.example.com/*", zone_name = "example.com" }
+
+updateTOML = tomlJSONPathReplacer(toml, ['env', 'production'], {
+    route: {
+        pattern: 'example.com/*',
+        zone_name: 'example.com'
+    }
+})
+// [env.production]
+// route = { pattern = "example.com/*", zone_name = "example.com" }
 ```
 
-## Caveats
-Only scalar values are allowed.

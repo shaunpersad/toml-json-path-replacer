@@ -1,10 +1,10 @@
 import { parseForESLint, traverseNodes } from 'toml-eslint-parser';
-import { TOMLNode, TOMLTable } from 'toml-eslint-parser/lib/ast';
+import { TOMLNode } from 'toml-eslint-parser/lib/ast';
 import TOML, { AnyJson } from '@iarna/toml';
 import { getPath, JSONPath, matchPaths, pathsAreEqual, PathTracker } from './paths';
 import _set from 'lodash.set';
 import { isArrayOfObjects, isNumeric, isPlainObject } from './utils';
-import { serializeKeyValue, serializePathToKey, serializeTable } from './serializer';
+import { serializeKeyValue, serializeTable } from './serializer';
 
 const RANGE_START = 0;
 const RANGE_END = 1;
@@ -16,7 +16,6 @@ function insert(
   pathTracker: PathTracker,
   mostMatchedPath: JSONPath,
 ): string {
-  console.log({ jsonPath, mostMatchedPath });
   let node = pathTracker.get(mostMatchedPath);
   if (!node) {
     const tableArrayNode = pathTracker.get([...mostMatchedPath, 0]); // only table arrays will match this pattern
@@ -32,13 +31,11 @@ function insert(
     }
   }
   if (!node) { // we didn't find any existing nodes so we can make a brand new entry in the top-level table
+
     // only objects can be turned into tables, which are desirable because they can go to the bottom of the file
     // non-objects get turned into kv pairs, which cannot safely go to the bottom,
     // because they may get unintentionally added to some other table
-    console.log('insert - adding new entry');
-
     if (isPlainObject(value) && Object.keys(value).length) { // we can create regular tables
-      console.log('is plain object');
       return [
         toml.trimEnd(),
         '\n\n',
@@ -46,7 +43,6 @@ function insert(
       ].join('').trim();
     }
     if (isArrayOfObjects(value)) { // we can create table arrays
-      console.log('is array of objects');
       return [
         toml.trimEnd(),
         '\n\n',
@@ -71,7 +67,6 @@ function insert(
 
   switch (node.type) {
     case 'TOMLTable':
-      console.log('insert - updating table', node.kind, 'with key', node.resolvedKey);
       if (node.kind === 'array') {
         const entireTableArrayPath = node.resolvedKey.slice(0, -1); // remove index
         // are we targeting an array element?
@@ -109,7 +104,6 @@ function insert(
           // we're trying to update an array index with an invalid index, which is a type change
           !isNumeric(jsonPath[node.resolvedKey.length - 1])
         ) { // remove the table arrays and try again
-          console.log('insert - removing table arrays');
           let tomlWithoutArray = '';
           let index = 0;
           let lastEnd = 0;
@@ -122,7 +116,6 @@ function insert(
           return tomlJSONPathReplacer(tomlWithoutArray.trimEnd(), jsonPath, value) + toml.slice(lastEnd);
         }
         // we're adding a new kv pair into an existing element
-        console.log('insert - into table array');
         const valuePath = jsonPath.slice(node.resolvedKey.length);
         return [
           toml.slice(0, node.range[RANGE_END]).trimEnd(),
@@ -131,7 +124,6 @@ function insert(
           toml.slice(node.range[RANGE_END]),
         ].join('');
       } else {
-        console.log('insert - updating existing standard table');
         const valuePath = jsonPath.slice(node.resolvedKey.length);
         return [
           toml.slice(0, node.range[RANGE_END]).trimEnd(),
@@ -141,7 +133,6 @@ function insert(
         ].join('');
       }
     case 'TOMLArray': {
-      console.log('insert - updating array');
       let arrayPath: JSONPath = [];
       let valuePath: JSONPath = [];
       for (let index = 0; index < jsonPath.length; index++) {
@@ -200,7 +191,6 @@ function insert(
       ].join('');
     }
     case 'TOMLInlineTable': { // inline tables cannot have comments or any trailing commas, so it's safe to remake
-      console.log('insert - updating inline table');
       const { data } = TOML.parse(`data = ${toml.slice(...node.range)}`) as { data: object };
       const valuePath = jsonPath.slice(mostMatchedPath.length);
       const body = _set(data, valuePath, value);
@@ -211,7 +201,6 @@ function insert(
       ].join('');
     }
     default: {
-      console.log('insert - default update');
       const valuePath = jsonPath.slice(mostMatchedPath.length);
       const body = _set({}, valuePath, value);
       return [
@@ -231,21 +220,17 @@ function update(
 ): string {
   const [start, end] = node.range;
   if (node.type === 'TOMLTable') {  // tables require special care
-    console.log('update - updating table');
     if (isPlainObject(value) && Object.keys(value).length) {
-      console.log('plain object');
       return [
         toml.slice(0, node.range[RANGE_START]),
         serializeTable(node.resolvedKey.slice(0, node.kind === 'array' ? -1 : undefined), value, node.kind),
         toml.slice(end),
       ].join('');
     } else { // remove the table and go through the insertion logic instead
-      console.log('update - removing table');
       const tomlWithoutTable = toml.slice(0, start).trimEnd() + toml.slice(end);
       return tomlJSONPathReplacer(tomlWithoutTable, jsonPath, value);
     }
   }
-  console.log('update - default replacement');
   return toml.slice(0, start) + TOML.stringify.value(value as AnyJson) + toml.slice(end);
 }
 
