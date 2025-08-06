@@ -232,7 +232,7 @@ function update(
   const [start, end] = node.range;
   if (node.type === 'TOMLTable') {  // tables require special care
     console.log('update - updating table');
-    if (isPlainObject(value)) {
+    if (isPlainObject(value) && Object.keys(value).length) {
       console.log('plain object');
       return [
         toml.slice(0, node.range[RANGE_START]),
@@ -241,7 +241,7 @@ function update(
       ].join('');
     } else { // remove the table and go through the insertion logic instead
       console.log('update - removing table');
-      const tomlWithoutTable = toml.slice(0, start) + toml.slice(end);
+      const tomlWithoutTable = toml.slice(0, start).trimEnd() + toml.slice(end);
       return tomlJSONPathReplacer(tomlWithoutTable, jsonPath, value);
     }
   }

@@ -494,6 +494,115 @@ database_id = "<DATABASE_ID_1>"
     });
   });
 
+  describe('inline tables', () => {
+    const tomlWithInlineTable = `
+# route comment top
+route = { pattern = "example.org/*", zone_name = "example.org" } # route comment inline
+`;
+
+    it('replaces existing inline tables', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithInlineTable,
+        ['route'],
+        { pattern: 'example.com/*', zone_name: 'example.com' },
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # route comment top
+        route = { pattern = "example.com/*", zone_name = "example.com" } # route comment inline
+        "
+      `);
+    });
+
+    it('replaces items inside inline tables', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithInlineTable,
+        ['route', 'pattern'],
+        'api.example.org/*',
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # route comment top
+        route = { pattern = "api.example.org/*", zone_name = "example.org" } # route comment inline
+        "
+      `);
+    });
+
+    it('adds new items to inline tables', () => {
+      const updatedTOML = tomlJSONPathReplacer(
+        tomlWithInlineTable,
+        ['route', 'foo'],
+        {
+          bar: ['baz'],
+        },
+      );
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "
+        # route comment top
+        route = { pattern = "example.org/*", zone_name = "example.org", foo = { bar = [ "baz" ] } } # route comment inline
+        "
+      `);
+    });
+
+    it('updates nested items in inline tables', () => {
+      const updatedTOML1 = tomlJSONPathReplacer(
+        tomlWithInlineTable,
+        ['route', 'foo'],
+        {
+          bar: ['baz'],
+        },
+      );
+      const updatedTOML2 = tomlJSONPathReplacer(
+        updatedTOML1,
+        ['route', 'foo', 'bar', 0],
+        'boom',
+      );
+      expect(updatedTOML2).toMatchInlineSnapshot(`
+        "
+        # route comment top
+        route = { pattern = "example.org/*", zone_name = "example.org", foo = { bar = [ "boom" ] } } # route comment inline
+        "
+      `);
+    });
+
+    describe('empty inline tables', () => {
+      it('adds new inline tables to a blank toml', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          '',
+          ['route'],
+          {},
+        );
+        expect(updatedTOML).toMatchInlineSnapshot('"route = { }"');
+      });
+      it('replaces blank inline tables', () => {
+        const updatedTOML1 = tomlJSONPathReplacer(
+          '',
+          ['route'],
+          {},
+        );
+        const updatedTOML2 = tomlJSONPathReplacer(
+          updatedTOML1,
+          ['route'],
+          { pattern: 'example.com/*', zone_name: 'example.com' },
+        );
+        expect(updatedTOML2).toMatchInlineSnapshot('"route = { pattern = "example.com/*", zone_name = "example.com" }"');
+      });
+      it('inserts into blank inline tables', () => {
+        const updatedTOML1 = tomlJSONPathReplacer(
+          '',
+          ['route'],
+          {},
+        );
+        const updatedTOML2 = tomlJSONPathReplacer(
+          updatedTOML1,
+          ['route', 'pattern'],
+          'example.com/*',
+        );
+        expect(updatedTOML2).toMatchInlineSnapshot('"route = { pattern = "example.com/*" }"');
+      });
+    });
+  });
+
   describe('arrays', () => {
     const tomlWithArray = `
 # array
@@ -727,7 +836,7 @@ kv_namespaces = [
           'ANOTHER_KV',
         );
         const updatedTOML2 = tomlJSONPathReplacer(
-          tomlWithMultiLineArray,
+          updatedTOML1,
           ['kv_namespaces', 1, 'id'],
           'another-kv-id',
         );
@@ -737,7 +846,7 @@ kv_namespaces = [
           kv_namespaces = [
             # comment inside array
             { binding = "<MY_NAMESPACE>", id = "<KV_ID>" }, # comment inline
-            { id = "another-kv-id" }
+            { binding = "ANOTHER_KV", id = "another-kv-id" }
           ] 
           "
         `);
@@ -755,7 +864,7 @@ kv_namespaces = [
         const updatedTOML = tomlJSONPathReplacer(
           tomlWithMultiLineArray,
           ['kv_namespaces', 1],
-          { foo: 'bar' },
+          'foo',
         );
         expect(updatedTOML).toMatchInlineSnapshot(`
           "
@@ -763,7 +872,7 @@ kv_namespaces = [
           kv_namespaces = [
             # comment inside array
             { binding = "<MY_NAMESPACE>", id = "<KV_ID>" }, # comment inline
-            { foo = "bar" }
+            "foo"
           ] 
           "
         `);
@@ -812,7 +921,7 @@ compatibility_flags = [] # inline comment
           ['compatibility_flags'],
           [],
         );
-        expect(updatedTOML).toMatchInlineSnapshot(`"compatibility_flags = [ ]"`);
+        expect(updatedTOML).toMatchInlineSnapshot('"compatibility_flags = [ ]"');
       });
 
       it('replaces an existing array with an empty array', () => {
@@ -981,8 +1090,7 @@ cpu_ms = 100 # value
       expect(updatedTOML).toMatchInlineSnapshot(`
         "limits = 500
 
-        # table
-         # value"
+        # table # value"
       `);
     });
 
@@ -1161,8 +1269,7 @@ cpu_ms = 100 # value
           500,
         );
         expect(updatedTOML).toMatchInlineSnapshot(`
-          "# nested table
-           # value
+          "# nested table # value
 
           [env.production]
           limits = 500"
