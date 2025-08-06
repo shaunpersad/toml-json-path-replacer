@@ -66,7 +66,7 @@ updatedTOML = tomlJSONPathReplacer(toml, ['env', 'staging', 'route'], {
 });
 // [env.staging]
 // # Overrides above
-// route = { pattern = "api.staging.example.com/*", zone_name = "example.com" }
+// route = { pattern = "api.staging.example.com/*", zone_name = "api.staging.example.com" }
 
 updateTOML = tomlJSONPathReplacer(toml, ['env', 'production'], {
     route: {
