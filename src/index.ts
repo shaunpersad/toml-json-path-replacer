@@ -37,7 +37,8 @@ function insert(
     // because they may get unintentionally added to some other table
     console.log('insert - adding new entry');
 
-    if (isPlainObject(value)) { // we can create regular tables
+    if (isPlainObject(value) && Object.keys(value).length) { // we can create regular tables
+      console.log('is plain object');
       return [
         toml.trimEnd(),
         '\n\n',
@@ -45,6 +46,7 @@ function insert(
       ].join('').trim();
     }
     if (isArrayOfObjects(value)) { // we can create table arrays
+      console.log('is array of objects');
       return [
         toml.trimEnd(),
         '\n\n',

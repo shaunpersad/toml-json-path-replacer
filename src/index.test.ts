@@ -800,6 +800,113 @@ kv_namespaces = [
         `);
       });
     });
+
+    describe('empty arrays', () => {
+      const tomlWithEmptyArray = `
+# array
+compatibility_flags = [] # inline comment
+`;
+      it('adds an empty array to a blank toml', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          '',
+          ['compatibility_flags'],
+          [],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`"compatibility_flags = [ ]"`);
+      });
+
+      it('replaces an existing array with an empty array', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithArray,
+          ['compatibility_flags'],
+          [],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          compatibility_flags = [ ]    
+          "
+        `);
+      });
+
+      it('replaces empty arrays', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithEmptyArray,
+          ['compatibility_flags'],
+          ['nodejs_compat'],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          compatibility_flags = [ "nodejs_compat" ] # inline comment
+          "
+        `);
+      });
+
+      it('adds a new item to an empty array', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithEmptyArray,
+          ['compatibility_flags', 0],
+          'nodejs_compat',
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          compatibility_flags = [ "nodejs_compat" ] # inline comment
+          "
+        `);
+      });
+    });
+
+    describe('empty multi-line arrays', () => {
+      const tomlWithEmptyMultiLineArray = `
+# array
+compatibility_flags = [ # array start
+# todo fill up array
+] # array end
+`;
+      it('replaces an existing array with an empty array', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithEmptyMultiLineArray,
+          ['compatibility_flags'],
+          [],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          compatibility_flags = [ ] # array end
+          "
+        `);
+      });
+
+      it('replaces empty arrays', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithEmptyMultiLineArray,
+          ['compatibility_flags'],
+          ['nodejs_compat'],
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          compatibility_flags = [ "nodejs_compat" ] # array end
+          "
+        `);
+      });
+
+      it('adds a new item to an empty array', () => {
+        const updatedTOML = tomlJSONPathReplacer(
+          tomlWithEmptyMultiLineArray,
+          ['compatibility_flags', 0],
+          'nodejs_compat',
+        );
+        expect(updatedTOML).toMatchInlineSnapshot(`
+          "
+          # array
+          compatibility_flags = [ "nodejs_compat" ] # array end
+          "
+        `);
+      });
+    });
   });
 
   describe('standard tables', () => {
