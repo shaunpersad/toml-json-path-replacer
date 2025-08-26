@@ -1,5 +1,5 @@
 import { parseForESLint, traverseNodes } from 'toml-eslint-parser';
-import { TOMLNode } from 'toml-eslint-parser/lib/ast';
+import { TOMLContentNode, TOMLNode } from 'toml-eslint-parser/lib/ast';
 import TOML, { AnyJson } from '@iarna/toml';
 import { getPath, JSONPath, matchPaths, pathsAreEqual, PathTracker } from './paths';
 import _set from 'lodash.set';
@@ -20,6 +20,19 @@ function insert(
   if (!node) {
     const tableArrayNode = pathTracker.get([...mostMatchedPath, 0]); // only table arrays will match this pattern
     if (tableArrayNode && tableArrayNode.type === 'TOMLTable' && tableArrayNode.kind === 'array') {
+      if (value === undefined) {
+        if (pathsAreEqual(jsonPath, mostMatchedPath)) {  // this is actually a delete of all the table array elements
+          let index = 0;
+          let tomlWithElementsRemoved = toml;
+          while (node = pathTracker.get([...mostMatchedPath, index++])) {
+            tomlWithElementsRemoved = tomlJSONPathReplacer(tomlWithElementsRemoved, [...mostMatchedPath, 0], undefined);
+          }
+          return tomlWithElementsRemoved;
+        }
+        // it's trying to unset a path that doesn't exist
+        return toml;
+      }
+      // otherwise set to the first table array element
       node = tableArrayNode;
     } else {
       // walk up the chain to find some node that already exists in the toml
@@ -30,8 +43,10 @@ function insert(
       }
     }
   }
+  if (value === undefined) { // we didn't match the specified path, but it was a delete anyway
+    return toml;
+  }
   if (!node) { // we didn't find any existing nodes so we can make a brand new entry in the top-level table
-
     // only objects can be turned into tables, which are desirable because they can go to the bottom of the file
     // non-objects get turned into kv pairs, which cannot safely go to the bottom,
     // because they may get unintentionally added to some other table
@@ -104,32 +119,34 @@ function insert(
           // we're trying to update an array index with an invalid index, which is a type change
           !isNumeric(jsonPath[node.resolvedKey.length - 1])
         ) { // remove the table arrays and try again
-          let tomlWithoutArray = '';
-          let index = 0;
-          let lastEnd = 0;
-          let element: TOMLNode | undefined;
-          while (element = pathTracker.get([...jsonPath, index++])) {
-            const [start, end] = element.range;
-            tomlWithoutArray += toml.slice(lastEnd, start).trimEnd();
-            lastEnd = end;
-          }
-          return tomlJSONPathReplacer(tomlWithoutArray.trimEnd(), jsonPath, value) + toml.slice(lastEnd);
+          return [
+            // insert the new value right where the first table array is
+            tomlJSONPathReplacer(
+              toml.slice(0, node.range[RANGE_START]).trimEnd(),
+              jsonPath,
+              value,
+            ),
+            // remove the table arrays from the rest of the toml
+            tomlJSONPathReplacer(toml.slice(node.range[RANGE_START]), jsonPath, undefined),
+          ].join('');
         }
         // we're adding a new kv pair into an existing element
         const valuePath = jsonPath.slice(node.resolvedKey.length);
+        const indexOfNewLine = toml.slice(node.range[RANGE_END]).indexOf('\n');
         return [
-          toml.slice(0, node.range[RANGE_END]).trimEnd(),
+          toml.slice(0, node.range[RANGE_END] + (indexOfNewLine === -1 ? 0 : indexOfNewLine)).trimEnd(),
           '\n',
           serializeKeyValue(valuePath, value),
-          toml.slice(node.range[RANGE_END]),
+          toml.slice(node.range[RANGE_END] + (indexOfNewLine === -1 ? 0 : indexOfNewLine)),
         ].join('');
-      } else {
+      } else { // regular table
         const valuePath = jsonPath.slice(node.resolvedKey.length);
+        const indexOfNewLine = toml.slice(node.range[RANGE_END]).indexOf('\n');
         return [
-          toml.slice(0, node.range[RANGE_END]).trimEnd(),
+          toml.slice(0, node.range[RANGE_END] + (indexOfNewLine === -1 ? 0 : indexOfNewLine)).trimEnd(),
           '\n',
           serializeKeyValue(valuePath, value),
-          toml.slice(node.range[RANGE_END]),
+          toml.slice(node.range[RANGE_END] + (indexOfNewLine === -1 ? 0 : indexOfNewLine)),
         ].join('');
       }
     case 'TOMLArray': {
@@ -215,7 +232,7 @@ function insert(
 function update(
   toml: string,
   jsonPath: JSONPath,
-  value: unknown,
+  value: unknown | undefined,
   node: TOMLNode,
 ): string {
   const [start, end] = node.range;
@@ -226,12 +243,95 @@ function update(
         serializeTable(node.resolvedKey.slice(0, node.kind === 'array' ? -1 : undefined), value, node.kind),
         toml.slice(end),
       ].join('');
-    } else { // remove the table and go through the insertion logic instead
-      const tomlWithoutTable = toml.slice(0, start).trimEnd() + toml.slice(end);
+    } else { // remove the table and go through the insertion logic instead, to change its type
+      const tomlWithoutTable = tomlJSONPathReplacer(toml, jsonPath, undefined);
       return tomlJSONPathReplacer(tomlWithoutTable, jsonPath, value);
     }
   }
   return toml.slice(0, start) + TOML.stringify.value(value as AnyJson) + toml.slice(end);
+}
+
+function remove(toml: string, jsonPath: JSONPath, node: TOMLNode): string {
+  switch (node.parent?.type) {
+    case 'TOMLArray':
+      for (let index = 0; index < node.parent.elements.length; index++) {
+        const element: TOMLContentNode = node.parent.elements[index];
+        if (node !== element) {
+          continue;
+        }
+        if (node.parent.elements.length === 1) { // removing the only element in the array
+          return [
+            toml.slice(0, node.parent.range[RANGE_START]),
+            '[]',
+            toml.slice(node.parent.range[RANGE_END]),
+          ].join('');
+        }
+        const [start, end] = node.range;
+        const nextElement = node.parent.elements[index + 1];
+        if (nextElement) { // chop off till start of next element
+          return [
+            toml.slice(0, start),
+            toml.slice(nextElement.range[RANGE_START]),
+          ].join('');
+        }
+        if (node.loc.end.line === node.parent.loc.end.line) { // same line
+          const indexOfComma = toml.slice(end, node.parent.range[RANGE_END]).indexOf(',');
+          return [
+            toml.slice(0, start),
+            toml.slice(end + (indexOfComma === -1 ? 0 : (indexOfComma + 1))),
+          ].join('');
+        }
+        const indexOfNewLine = toml.slice(end, node.parent.range[RANGE_END]).indexOf('\n');
+        return [
+          toml.slice(0, start).trimEnd(),
+          toml.slice(end + indexOfNewLine),
+        ].join('');
+      }
+      break;
+    case 'TOMLKeyValue': {
+      const grandparent = node.parent.parent;
+      switch (grandparent.type) {
+        case 'TOMLTopLevelTable':
+        case 'TOMLTable':
+          if (grandparent.body.length === 1) { // tables _can_ exist with no elements, but it may swallow up unwanted keys under it
+            if (grandparent.type === 'TOMLTopLevelTable') {
+              return '';
+            }
+            return remove(toml, jsonPath.slice(0, -1), grandparent);
+          }
+          for (const element of grandparent.body) {
+            if (element === node.parent) {
+              const [start, end] = element.range;
+              const indexOfNewLine = toml.slice(end).indexOf('\n');
+              return [
+                toml.slice(0, start).trimEnd(),
+                toml.slice(end + (indexOfNewLine === -1 ? 0 : indexOfNewLine)),
+              ].join('');
+            }
+          }
+          break;
+        case 'TOMLInlineTable': {
+          const [start, end] = grandparent.range;
+          const { data } = TOML.parse(`data = ${toml.slice(start, end)}`) as { data: object };
+          const key = jsonPath[jsonPath.length - 1];
+          delete data[key as keyof typeof data];
+          return [
+            toml.slice(0, start),
+            TOML.stringify.value(data as AnyJson),
+            toml.slice(end),
+          ].join('');
+        }
+      }
+    }
+      break;
+  }
+  // the only possible case left is if we're targeting a table
+  const [start, end] = node.range;
+  const indexOfNewLine = toml.slice(end).indexOf('\n');
+  return [
+    toml.slice(0, start).trimEnd(),
+    toml.slice(end + (indexOfNewLine === -1 ? 0 : indexOfNewLine)),
+  ].join('');
 }
 
 /**
@@ -240,7 +340,7 @@ function update(
 function tomlJSONPathReplacer(
   toml: string,
   jsonPath: JSONPath,
-  value: unknown,
+  value: unknown | undefined,
 ): string {
   if (!jsonPath.length) {
     throw new Error('JSON paths cannot be empty.');
@@ -267,7 +367,9 @@ function tomlJSONPathReplacer(
       }
       if (pathsAreEqual(currentPath, jsonPath)) {
         found = true;
-        replaced = update(toml, jsonPath, value, node);
+        replaced = value === undefined
+          ? remove(toml, jsonPath, node)
+          : update(toml, jsonPath, value, node);
       }
       pathTracker.set(currentPath, node);
     },

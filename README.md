@@ -76,5 +76,7 @@ updateTOML = tomlJSONPathReplacer(toml, ['env', 'production'], {
 })
 // [env.production]
 // route = { pattern = "example.com/*", zone_name = "example.com" }
+
+updateTOML = tomlJSONPathReplacer(toml, ['env', 'staging'], undefined); // pass undefined to unset values
 ```
 
