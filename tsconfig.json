@@ -7,18 +7,17 @@
     "resolveJsonModule": true,
     "moduleDetection": "force",
     "isolatedModules": true,
-    "verbatimModuleSyntax": true,
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
-    "module": "NodeNext",
+    "module": "commonjs",
     "outDir": "dist",
     "rootDir": "src",
     "sourceMap": true,
 
     "declaration": true
   },
-  "exclude": ["src/index.test.ts"]
+  "exclude": ["src/index.test.ts", "dist"]
 }

@@ -1,32 +1,17 @@
 {
   "name": "toml-json-path-replacer",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "Use JSON paths to replace values in TOML.",
-  "main": "dist/cjs/index.cjs",
-  "types": "dist/cjs/index.d.cts",
-  "type": "module",
-  "exports": {
-    "import": {
-      "types": "./dist/esm/index.d.mts",
-      "default": "./dist/esm/index.mjs"
-    },
-    "require": {
-      "types": "./dist/cjs/index.d.cts",
-      "default": "./dist/cjs/index.cjs"
-    }
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "vitest run src/index.test.ts"
   },
   "files": [
     "dist/*"
   ],
-  "scripts": {
-    "build": "npm run build:cjs && npm run build:esm",
-    "build:cjs": "tsc -p tsconfig.cjs.json && npm run build:cjs:transform",
-    "build:cjs:transform": "mjscjs -p tsconfig.cjs.json",
-    "build:esm": "tsc -p tsconfig.esm.json && npm run build:esm:transform",
-    "build:esm:transform": "mjscjs -p tsconfig.esm.json",
-    "prepublishOnly": "npm run build",
-    "test": "vitest run src/index.test.ts"
-  },
   "author": "Shaun Persad <shaunpersad@gmail.com>",
   "license": "MIT",
   "repository": {
