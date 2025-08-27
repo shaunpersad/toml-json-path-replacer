@@ -1,12 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "target": "es2018",
     "module": "commonjs",
     "outDir": "dist/cjs",
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "sourceMap": true
+    "verbatimModuleSyntax": false
   },
   "exclude": ["node_modules", "src/index.test.ts"]
 }

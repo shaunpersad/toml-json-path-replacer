@@ -1,8 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist/esm",
-    "sourceMap": true
+    "outDir": "dist/esm"
   },
   "exclude": ["node_modules", "src/index.test.ts"]
 }

@@ -1,10 +1,10 @@
 import { parseForESLint, traverseNodes } from 'toml-eslint-parser';
-import { TOMLContentNode, TOMLNode } from 'toml-eslint-parser/lib/ast';
-import TOML, { AnyJson } from '@iarna/toml';
-import { getPath, JSONPath, matchPaths, pathsAreEqual, PathTracker } from './paths';
+import type { TOMLContentNode, TOMLNode } from 'toml-eslint-parser/lib/ast/index.js';
+import TOML, { type AnyJson } from '@iarna/toml';
+import { getPath, type JSONPath, matchPaths, pathsAreEqual, PathTracker } from './paths.js';
 import _set from 'lodash.set';
-import { isArrayOfObjects, isNumeric, isPlainObject } from './utils';
-import { serializeKeyValue, serializeTable } from './serializer';
+import { isArrayOfObjects, isNumeric, isPlainObject } from './utils.js';
+import { serializeKeyValue, serializeTable } from './serializer.js';
 
 const RANGE_START = 0;
 const RANGE_END = 1;
@@ -191,13 +191,13 @@ function insert(
       const lastElement = node.elements[node.elements.length - 1];
       const elementBefore = node.elements[node.elements.length - 2];
       const start = elementBefore ? elementBefore.range[RANGE_END] : node.range[RANGE_START] + 1;
-      const betweenElements = toml.slice(start, lastElement.range[RANGE_START]);
+      const betweenElements = toml.slice(start, lastElement?.range[RANGE_START]);
       const spaceBetweenElements = (betweenElements.split('\n').pop() ?? '').replace(',', '');
-      const toArrayEnd = toml.slice(lastElement.range[RANGE_END], node.range[RANGE_END] - 1);
+      const toArrayEnd = toml.slice(lastElement?.range[RANGE_END], node.range[RANGE_END] - 1);
       const [lastElementRestOfLine] = toArrayEnd.replace(',', '').split('\n');
       const toArrayEndExcludingLastElementRestOfLine = toArrayEnd.replace(',', '').split('\n').pop();
       return [
-        toml.slice(0, lastElement.range[RANGE_END]),
+        toml.slice(0, lastElement?.range[RANGE_END]),
         ',',
         toArrayEnd.includes('\n') ? `${lastElementRestOfLine}\n` : '',
         spaceBetweenElements,
@@ -255,7 +255,7 @@ function remove(toml: string, jsonPath: JSONPath, node: TOMLNode): string {
   switch (node.parent?.type) {
     case 'TOMLArray':
       for (let index = 0; index < node.parent.elements.length; index++) {
-        const element: TOMLContentNode = node.parent.elements[index];
+        const element: TOMLContentNode = node.parent.elements[index]!;
         if (node !== element) {
           continue;
         }
@@ -387,5 +387,6 @@ function tomlJSONPathReplacer(
   return replaced;
 }
 
-export { JSONPath, tomlJSONPathReplacer };
+export { tomlJSONPathReplacer };
+export type { JSONPath };
 

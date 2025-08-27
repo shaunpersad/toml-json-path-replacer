@@ -1,6 +1,6 @@
-import TOML, { AnyJson } from '@iarna/toml';
-import { JSONPath, JSONPathKey } from './paths';
-import { TOMLTable } from 'toml-eslint-parser/lib/ast';
+import TOML, { type AnyJson } from '@iarna/toml';
+import type { JSONPath, JSONPathKey } from './paths.js';
+import type { TOMLTable } from 'toml-eslint-parser/lib/ast/index.js';
 
 export function serializeKey(value: JSONPathKey) {
   return value.toString().includes('.') ? JSON.stringify(value) : value;

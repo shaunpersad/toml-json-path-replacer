@@ -1,6 +1,6 @@
 {
   "name": "toml-json-path-replacer",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Use JSON paths to replace values in TOML.",
   "main": "dist/cjs/index.cjs",
   "types": "dist/cjs/index.d.cts",
@@ -16,8 +16,7 @@
     }
   },
   "files": [
-    "dist/*",
-    "src/*"
+    "dist/*"
   ],
   "scripts": {
     "build": "npm run build:cjs && npm run build:esm",

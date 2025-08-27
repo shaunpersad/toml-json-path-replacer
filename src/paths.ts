@@ -1,4 +1,4 @@
-import { TOMLNode } from 'toml-eslint-parser/lib/ast';
+import type { TOMLNode } from 'toml-eslint-parser/lib/ast/index.js';
 
 export type JSONPathKey = string | number;
 
@@ -36,12 +36,12 @@ export function pathsAreEqual(pathA: JSONPath, pathB: JSONPath) {
   if (pathA.length !== pathB.length) {
     return false;
   }
-  return pathA.every((key, index) => pathB[index].toString() === key.toString());
+  return pathA.every((key, index) => pathB[index]?.toString() === key.toString());
 }
 
 export function matchPaths(intendedPath: JSONPath, currentPath: JSONPath): JSONPath {
   for (let i = 0; i < currentPath.length; i++) {
-    if (intendedPath[i]?.toString() !== currentPath[i].toString()) {
+    if (intendedPath[i]?.toString() !== currentPath[i]?.toString()) {
       return currentPath.slice(0, i);
     }
   }

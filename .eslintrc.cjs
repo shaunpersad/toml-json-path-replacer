@@ -22,9 +22,10 @@ module.exports = {
     '@typescript-eslint/no-unused-expressions': 'off',
     '@typescript-eslint/no-use-before-define': 'off',
     '@typescript-eslint/restrict-template-expressions': 'off',
+    'import/extensions': 'off',
     'import/no-cycle': 'off',
     'import/prefer-default-export': 'off',
-    'no-plusplus': 'off',
+    'no-plusplus': 'off'
   },
   ignorePatterns: ["node_modules/", "dist/"]
 };

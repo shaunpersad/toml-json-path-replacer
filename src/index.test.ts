@@ -1,5 +1,5 @@
 import { expect, describe, it } from 'vitest';
-import { tomlJSONPathReplacer, JSONPath } from './index';
+import { tomlJSONPathReplacer, type JSONPath } from './index.js';
 
 type Replacements = Array<{ path: JSONPath, value: unknown }>;
 
