@@ -1,6 +1,6 @@
 {
   "name": "toml-json-path-replacer",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Use JSON paths to replace values in TOML.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

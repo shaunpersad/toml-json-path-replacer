@@ -3317,6 +3317,110 @@ database_id = "<DATABASE_ID_1>"
       expect(updatedTOML).toEqual(toml);
     });
 
+    it('removes keys that do not have explicit nodes present', () => {
+      const updatedTOML = tomlJSONPathReplacer(toml, ['env'], undefined);
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# Top-level configuration
+        name = "my-worker"
+        main = "src/index.js"
+        "compatibility_date" = "2022-07-12"
+
+        workers_dev = false
+
+        # route comment top
+        route = { pattern = "example.org/*", zone_name = "example.org" } # route comment inline
+
+        # kv comment top
+        kv_namespaces = [
+          { binding = "<MY_NAMESPACE>", id = "<KV_ID>" } # kv comment inline
+        ]
+
+        queues.producers = [
+          { binding = "<BINDING_NAME1>", queue = "<QUEUE_NAME1>" } # inline queue comment
+        ]
+
+        # table comment top
+        [limits] # table comment on key
+        cpu_ms = 100 # table comment on body
+
+        # db comment top
+        [[d1_databases]] # db comment on key
+        binding = "<BINDING_NAME_1>" # db comment on body
+        database_name = "<DATABASE_NAME_1>"
+        database_id = "<DATABASE_ID_1>"
+
+        [[d1_databases]]
+        binding = "<BINDING_NAME_2>" # second db
+        database_name = "<DATABASE_NAME_2>"
+        database_id = "<DATABASE_ID_3>"
+
+        [[r2_buckets]]
+        binding = "<BINDING_NAME1>"
+        bucket_name = "<BUCKET_NAME1>"
+
+        [[r2_buckets]]
+        binding = "<BINDING_NAME2>"
+        bucket_name = "<BUCKET_NAME2>""
+      `);
+    });
+
+    it('removes keys that partially match existing nodes', () => {
+      const updatedTOML = tomlJSONPathReplacer(toml, ['env', 'production'], undefined);
+      expect(updatedTOML).toMatchInlineSnapshot(`
+        "# Top-level configuration
+        name = "my-worker"
+        main = "src/index.js"
+        "compatibility_date" = "2022-07-12"
+
+        workers_dev = false
+
+        # route comment top
+        route = { pattern = "example.org/*", zone_name = "example.org" } # route comment inline
+
+        # kv comment top
+        kv_namespaces = [
+          { binding = "<MY_NAMESPACE>", id = "<KV_ID>" } # kv comment inline
+        ]
+
+        queues.producers = [
+          { binding = "<BINDING_NAME1>", queue = "<QUEUE_NAME1>" } # inline queue comment
+        ]
+
+        # table comment top
+        [limits] # table comment on key
+        cpu_ms = 100 # table comment on body
+
+        # db comment top
+        [[d1_databases]] # db comment on key
+        binding = "<BINDING_NAME_1>" # db comment on body
+        database_name = "<DATABASE_NAME_1>"
+        database_id = "<DATABASE_ID_1>"
+
+        [[d1_databases]]
+        binding = "<BINDING_NAME_2>" # second db
+        database_name = "<DATABASE_NAME_2>"
+        database_id = "<DATABASE_ID_3>"
+
+        [[r2_buckets]]
+        binding = "<BINDING_NAME1>"
+        bucket_name = "<BUCKET_NAME1>"
+
+        [[r2_buckets]]
+        binding = "<BINDING_NAME2>"
+        bucket_name = "<BUCKET_NAME2>"
+
+        [env.staging]
+        # Overrides above
+        name = "my-worker-staging" #staging name
+        route = { pattern = "staging.example.org/*", zone_name = "example.org" } # staging routes
+
+        kv_namespaces = [
+          { binding = "<MY_NAMESPACE_1>", id = "<STAGING_KV_ID_1>" }, # comment 1
+          { binding = "<MY_NAMESPACE_2>", id = "<STAGING_KV_ID_2>" }, # comment 2
+        ]"
+      `);
+    });
+
     describe('arrays', () => {
       describe('single line arrays', () => {
         const toml1 = 'arr = [{a = "b"}, "c", 3]';

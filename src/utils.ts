@@ -1,3 +1,5 @@
+import { TOMLNode } from 'toml-eslint-parser/lib/ast/index.js';
+
 export function isPlainObject(value: unknown): value is object {
   if (typeof value !== 'object' || value === null) {
     return false;
@@ -15,6 +17,20 @@ export function isNumeric(value: unknown): boolean {
   }
   if (typeof value === 'string') {
     return !isNaN(Number(value));
+  }
+  return false;
+}
+
+export function isAncestor(node: TOMLNode, potentialAncestor: TOMLNode): boolean {
+  let n = node;
+  while (n) {
+    if (!n.parent) {
+      break;
+    }
+    if (n.parent === potentialAncestor) {
+      return true;
+    }
+    n = n.parent;
   }
   return false;
 }

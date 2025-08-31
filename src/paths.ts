@@ -49,7 +49,7 @@ export function matchPaths(intendedPath: JSONPath, currentPath: JSONPath): JSONP
 }
 
 export class PathTracker {
-  protected readonly paths: Array<[JSONPath, TOMLNode]> = [];
+  public readonly paths: Array<[JSONPath, TOMLNode]> = [];
 
   set(path: JSONPath, node: TOMLNode): void {
     const existingIndex = this.paths.findIndex(

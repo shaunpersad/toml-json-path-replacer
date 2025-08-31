@@ -3,7 +3,7 @@ import type { TOMLContentNode, TOMLNode } from 'toml-eslint-parser/lib/ast/index
 import TOML, { type AnyJson } from '@iarna/toml';
 import { getPath, type JSONPath, matchPaths, pathsAreEqual, PathTracker } from './paths.js';
 import _set from 'lodash.set';
-import { isArrayOfObjects, isNumeric, isPlainObject } from './utils.js';
+import { isAncestor, isArrayOfObjects, isNumeric, isPlainObject } from './utils.js';
 import { serializeKeyValue, serializeTable } from './serializer.js';
 
 const RANGE_START = 0;
@@ -375,6 +375,22 @@ function tomlJSONPathReplacer(
     },
     leaveNode() {},
   });
+
+  if (value === undefined) {
+    // check if there are additional child paths we need to delete
+    const deletedNode = pathTracker.get(jsonPath);
+    let updatedTOML = replaced;
+    for (const [path, node] of pathTracker.paths) {
+      if (path.length > jsonPath.length && pathsAreEqual(path.slice(0, jsonPath.length), jsonPath)) {
+        if (deletedNode && isAncestor(node, deletedNode)) {
+          continue;
+        }
+        updatedTOML = tomlJSONPathReplacer(updatedTOML, path, undefined);
+      }
+    }
+    return updatedTOML;
+  }
+
   if (!found) {
     return insert(
       toml,
